@@ -1,0 +1,43 @@
+name: "Terraform Module Validate"
+
+# Only run during lifecycle of a PR
+on:
+  pull_request:
+    types: 
+      - opened 
+      - reopened 
+      - synchronize
+    branches:
+      - main
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.5
+
+      - name: Terraform Init  
+        run: terraform init 
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+
+      - name: Terraform Fmt 
+        run: terraform fmt -check --recursive 
+
+      - name: Cache plugin dir 
+        uses: actions/cache@v3
+        with:
+          path: ~/.tflint.d/plugins
+          key: ubuntu-latest-tflint-${{ hashFiles('.tflint.hcl') }}
+      
+      - name: Setup TFLint 
+        uses: terraform-linters/setup-tflint@v3.1.0
+        with:
+          tflint_version: v0.47.0
+    
+      - name: Run TFLint
+        run: tflint --recursive --no-color
